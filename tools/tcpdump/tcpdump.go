@@ -21,15 +21,17 @@ const (
 
 var (
 	device  = flag.String("i", "", "interface")
+	ofile   = flag.String("w", "", "file")
 	snaplen = flag.Int("s", 65535, "snaplen")
 	hexdump = flag.Bool("X", false, "hexdump")
+	help    = flag.Bool("h", false, "help")
 )
 
 func main() {
 	expr := ""
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: %s [ -i interface ] [ -s snaplen ] [ -X ] [ expression ]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "usage: %s [ -i interface ] [ -s snaplen ] [ -X ] [ -w file ] [ -h show usage] [ expression ] \n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -37,6 +39,10 @@ func main() {
 
 	if len(flag.Args()) > 0 {
 		expr = flag.Arg(0)
+	}
+
+	if *help {
+		flag.Usage()
 	}
 
 	if *device == "" {
@@ -55,6 +61,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "tcpdump:", err)
 		return
 	}
+	defer h.Close()
 
 	if expr != "" {
 		fmt.Println("tcpdump: setting filter to", expr)
@@ -64,20 +71,36 @@ func main() {
 		}
 	}
 
+	if *ofile != "" {
+		dumper, oerr := h.DumpOpen(ofile)
+		if oerr != nil {
+			fmt.Fprintln(os.Stderr, "tcpdump: couldn't write to file:", oerr)
+		}
+		_, lerr := h.PcapLoop(0, PacketDump, dumper)
+		if lerr != nil {
+			fmt.Fprintln(os.Stderr, "tcpdump: loop error:", lerr, h.Geterror())
+		}
+		return
+	}
+
 	for pkt, r := h.NextEx(); r >= 0; pkt, r = h.NextEx() {
 		if r == 0 {
 			// timeout, continue
 			continue
 		}
-		pkt.Decode()
-		fmt.Println(pkt)
-		if *hexdump {
-			Hexdump(pkt)
-		}
-
+		PacketDump(pkt)
 	}
 	fmt.Fprintln(os.Stderr, "tcpdump:", h.Geterror())
 
+}
+
+func PacketDump(pkt *pcap.Packet) bool {
+	pkt.Decode()
+	fmt.Println(pkt)
+	if *hexdump {
+		Hexdump(pkt)
+	}
+	return true
 }
 
 func min(a, b int) int {
