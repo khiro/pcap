@@ -363,7 +363,7 @@ func (p *Pcap) PcapLoop(i int, f pcapPktHdr, dumper *pcapDumper) (result int32, 
 	if i <= 0 {
 		loop = true
 	}
-	for i >= 0 || loop {
+	for i > 0 || loop {
 		result = int32(C.hack_pcap_next_ex(p.cptr, &pkthdr_ptr, &buf_ptr))
 		switch result {
 		case 0:
@@ -406,5 +406,10 @@ func (p *Pcap) PcapLoop(i int, f pcapPktHdr, dumper *pcapDumper) (result int32, 
 
 func (p *Pcap) PcapDump(dumper *pcapDumper, pkthdr_ptr *C.struct_pcap_pkthdr, buf_ptr *C.u_char) (err error) {
 	C.hack_pcap_dump(dumper.cptr, pkthdr_ptr, buf_ptr)
+	return
+}
+
+func (p *Pcap) PcapDumpClose(dumper *pcapDumper) (err error) {
+	C.pcap_dump_close(dumper.cptr)
 	return
 }
