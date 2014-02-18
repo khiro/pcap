@@ -396,6 +396,7 @@ func (p *Pcap) PcapLoop(i int, f pcapPktHdr, dumper *pcapDumper) (result int32, 
 		}
 		if nil != dumper && dump {
 			p.PcapDump(dumper, pkthdr_ptr, buf_ptr)
+			p.PcapDumpFlush(dumper)
 		}
 		if !loop {
 			i--
@@ -406,6 +407,11 @@ func (p *Pcap) PcapLoop(i int, f pcapPktHdr, dumper *pcapDumper) (result int32, 
 
 func (p *Pcap) PcapDump(dumper *pcapDumper, pkthdr_ptr *C.struct_pcap_pkthdr, buf_ptr *C.u_char) (err error) {
 	C.hack_pcap_dump(dumper.cptr, pkthdr_ptr, buf_ptr)
+	return
+}
+
+func (p *Pcap) PcapDumpFlush(dumper *pcapDumper) (err error) {
+	C.pcap_dump_flush(dumper.cptr)
 	return
 }
 
