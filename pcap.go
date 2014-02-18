@@ -33,7 +33,7 @@ type Pcap struct {
 	cptr *C.pcap_t
 }
 
-type pcapDumper struct {
+type PcapDumper struct {
 	cptr *C.pcap_dumper_t
 }
 
@@ -340,8 +340,8 @@ func (p *Pcap) Inject(data []byte) (err error) {
 	return
 }
 
-func (p *Pcap) DumpOpen(ofile *string) (dumper *pcapDumper, err error) {
-	d := new(pcapDumper)
+func (p *Pcap) DumpOpen(ofile *string) (dumper *PcapDumper, err error) {
+	d := new(PcapDumper)
 	d.cptr = C.pcap_dump_open(p.cptr, C.CString(*ofile))
 	if nil == d.cptr {
 		err = errors.New("Cannot open dumpfile")
@@ -351,7 +351,7 @@ func (p *Pcap) DumpOpen(ofile *string) (dumper *pcapDumper, err error) {
 	return
 }
 
-func (p *Pcap) PcapLoop(i int, dumper *pcapDumper) (result int32, err error) {
+func (p *Pcap) PcapLoop(i int, dumper *PcapDumper) (result int32, err error) {
 	var pkthdr_ptr *C.struct_pcap_pkthdr
 	var buf_ptr *C.u_char
 	loop := false
@@ -385,17 +385,17 @@ func (p *Pcap) PcapLoop(i int, dumper *pcapDumper) (result int32, err error) {
 	return
 }
 
-func (p *Pcap) PcapDump(dumper *pcapDumper, pkthdr_ptr *C.struct_pcap_pkthdr, buf_ptr *C.u_char) (err error) {
+func (p *Pcap) PcapDump(dumper *PcapDumper, pkthdr_ptr *C.struct_pcap_pkthdr, buf_ptr *C.u_char) (err error) {
 	C.hack_pcap_dump(dumper.cptr, pkthdr_ptr, buf_ptr)
 	return
 }
 
-func (p *Pcap) PcapDumpFlush(dumper *pcapDumper) (err error) {
+func (p *Pcap) PcapDumpFlush(dumper *PcapDumper) (err error) {
 	C.pcap_dump_flush(dumper.cptr)
 	return
 }
 
-func (p *Pcap) PcapDumpClose(dumper *pcapDumper) (err error) {
+func (p *Pcap) PcapDumpClose(dumper *PcapDumper) (err error) {
 	C.pcap_dump_close(dumper.cptr)
 	return
 }
