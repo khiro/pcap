@@ -80,6 +80,7 @@ func main() {
 		if lerr != nil {
 			fmt.Fprintln(os.Stderr, "tcpdump: loop error:", lerr, h.Geterror())
 		}
+		defer h.PcapDumpClose(dumper)
 		return
 	}
 
