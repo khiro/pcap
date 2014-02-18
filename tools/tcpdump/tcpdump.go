@@ -76,7 +76,7 @@ func main() {
 		if oerr != nil {
 			fmt.Fprintln(os.Stderr, "tcpdump: couldn't write to file:", oerr)
 		}
-		_, lerr := h.PcapLoop(0, PacketDump, dumper)
+		_, lerr := h.PcapLoop(0, dumper)
 		if lerr != nil {
 			fmt.Fprintln(os.Stderr, "tcpdump: loop error:", lerr, h.Geterror())
 		}
@@ -89,19 +89,15 @@ func main() {
 			// timeout, continue
 			continue
 		}
-		PacketDump(pkt)
+		pkt.Decode()
+		fmt.Println(pkt)
+		if *hexdump {
+			Hexdump(pkt)
+		}
+
 	}
 	fmt.Fprintln(os.Stderr, "tcpdump:", h.Geterror())
 
-}
-
-func PacketDump(pkt *pcap.Packet) bool {
-	pkt.Decode()
-	fmt.Println(pkt)
-	if *hexdump {
-		Hexdump(pkt)
-	}
-	return true
 }
 
 func min(a, b int) int {

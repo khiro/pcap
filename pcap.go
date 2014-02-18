@@ -37,8 +37,6 @@ type pcapDumper struct {
 	cptr *C.pcap_dumper_t
 }
 
-type pcapPktHdr func(pkt *Packet) bool
-
 type pcapError struct{ string }
 
 type Stat struct {
@@ -353,12 +351,9 @@ func (p *Pcap) DumpOpen(ofile *string) (dumper *pcapDumper, err error) {
 	return
 }
 
-func (p *Pcap) PcapLoop(i int, f pcapPktHdr, dumper *pcapDumper) (result int32, err error) {
+func (p *Pcap) PcapLoop(i int, dumper *pcapDumper) (result int32, err error) {
 	var pkthdr_ptr *C.struct_pcap_pkthdr
 	var buf_ptr *C.u_char
-	var pkthdr C.struct_pcap_pkthdr
-	var buf unsafe.Pointer
-	dump := false
 	loop := false
 	if i <= 0 {
 		loop = true
@@ -379,22 +374,7 @@ func (p *Pcap) PcapLoop(i int, f pcapPktHdr, dumper *pcapDumper) (result int32, 
 		if nil == buf_ptr {
 			continue
 		}
-		if nil != f {
-			buf = unsafe.Pointer(buf_ptr)
-			pkthdr = *pkthdr_ptr
-
-			pkt := new(Packet)
-			pkt.Time = time.Unix(int64(pkthdr.ts.tv_sec), int64(pkthdr.ts.tv_usec)*1000)
-			pkt.Caplen = uint32(pkthdr.caplen)
-			pkt.Len = uint32(pkthdr.len)
-			pkt.Data = make([]byte, pkthdr.caplen)
-
-			for i := uint32(0); i < pkt.Caplen; i++ {
-				pkt.Data[i] = *(*byte)(unsafe.Pointer(uintptr(buf) + uintptr(i)))
-			}
-			dump = f(pkt)
-		}
-		if nil != dumper && dump {
+		if nil != dumper {
 			p.PcapDump(dumper, pkthdr_ptr, buf_ptr)
 			p.PcapDumpFlush(dumper)
 		}

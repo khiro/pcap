@@ -75,22 +75,11 @@ func TestPcapDump(t *testing.T) {
 	go udpSvr(port, numPkts, t)
 	go udpClient(port, numPkts, 1*time.Second, t)
 
-	pktsRecvd := 0
-	cb := func(pkt *Packet) bool {
-		pktsRecvd += 1
-		return true
-	}
-
-	r, err := h.PcapLoop(5, cb, d)
+	r, err := h.PcapLoop(5, d)
 	if r < 0 || err != nil {
 		return
 	}
 
-	if pktsRecvd != numPkts {
-		t.Fatalf("Capture failed pkts-send:%d, pkts-recvd:%d", numPkts, pktsRecvd)
-	}
-
-	t.Logf("Successfully captured %d packets", numPkts)
 	h.PcapDumpClose(d)
 	h.Close()
 
@@ -99,7 +88,21 @@ func TestPcapDump(t *testing.T) {
 		t.Fatalf("Failed to open pcap:%s", err)
 		return
 	}
-	t.Log("Successfully saved packets")
+	t.Log("Successfully open pcap")
+
+	pktsRecvd := 0
+	for pkt := newh.Next(); pkt != nil; pkt = newh.Next() {
+		pkt.Decode()
+		t.Logf("Packet:%s dataLen:%d", pkt, len(pkt.Payload))
+		pktsRecvd += 1
+	}
+	newh.Close()
+
+	if pktsRecvd != numPkts {
+		t.Fatalf("Capture failed pkts-send:%d, pkts-recvd:%d", numPkts, pktsRecvd)
+	}
+
+	t.Logf("Successfully captured %d packets", numPkts)
 
 	err = os.Remove(ofile)
 	if err != nil {
